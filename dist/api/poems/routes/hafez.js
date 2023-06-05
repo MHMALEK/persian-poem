@@ -12,7 +12,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const hafez_1 = require("../../../services/http/hafez");
 const hafezController = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    yield (0, hafez_1.getHafezPoemsAPI)();
+    yield (0, hafez_1.getHafezPoemsPersian)();
     res.send("Hafez");
 });
 const HafezGetPoems = () => { };

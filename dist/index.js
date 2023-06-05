@@ -18,7 +18,7 @@ app.get("/", (req, res) => {
 app.get("/hafez", hafez_1.default);
 const PersianPoemsTelegramBot = new telegram_bot_1.default(process.env.TELEGRAM_BOT_API_TOKEN);
 exports.PersianPoemsTelegramBot = PersianPoemsTelegramBot;
-(0, hafez_2.getHafezPoemsAPI)();
+(0, hafez_2.getHafezPoemsPersian)();
 app.listen(port, () => {
     console.log(`⚡️[server]: Server is running at 
 http://localhost:${port}`);

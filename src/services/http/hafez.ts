@@ -10,7 +10,6 @@ const itemsPerPage = 10;
 const getPoems = async (
   type: "ghete" | "ghazal" | "robaee2" | "ghaside" | "masnavi"
 ) => {
-  console.log("type", type);
   const htmlPage = await HafezHttpClient.getData(type);
   let $ = cheerio.load(htmlPage);
   // Select the list items and map over them
@@ -25,10 +24,37 @@ const getPoems = async (
   return list;
 };
 
+const selectAndRenderRandomGhazal = async (ctx: Context) => {
+  const list = await getPoems("ghazal");
+  const randomGhazalIndex = Math.floor(Math.random() * list.length);
+  const randomGhazal = list[randomGhazalIndex];
+
+  const poemText = await extractPoemsText(
+    randomGhazal.link.split("/hafez/")[1]
+  );
+
+  const keyboard = new InlineKeyboard();
+  keyboard
+    .url("مطالعه در وبسایت گنجور", `https://ganjoor.net/${randomGhazal.link}`)
+    .row();
+  keyboard.text("بازگشت", "back").row();
+
+  const text = `
+      <b>${randomGhazal.text} </b>
+
+
+    ${poemText}
+    
+    `;
+
+  ctx.reply(text, {
+    reply_markup: keyboard,
+    parse_mode: "HTML",
+  });
+};
+
 const extractPoemsText = async (type: any) => {
-  console.log("typssse", type);
   const poemHtml = await HafezHttpClient.getData(type);
-  console.log(poemHtml);
   let $ = cheerio.load(poemHtml);
   let items: any = [];
   $(".b").each((index, element) => {
@@ -49,8 +75,7 @@ const showPoem = async (ctx: any, text: string, link: string) => {
   let keyboard = new InlineKeyboard();
   keyboard.url("مطالعه در وبسایت گنجور", `https://ganjoor.net${link}`).row();
 
-  keyboard.text("منوی شعرا", "poet-list-from-new-message");
-  keyboard.text(" منوی حافظ شیرازی", "select-poet-new-message:0");
+  keyboard.text("بازگشت", "hafez_poems");
 
   ctx.reply(text, {
     reply_markup: keyboard,
@@ -98,13 +123,13 @@ function showPage(
 
   keyboard.push([
     {
-      text: "بازگشت به منوی شروع",
-      callback_data: `go-back-to-poet-list`,
+      text: "بازگشت",
+      callback_data: `hafez_poems`,
     },
   ]);
 
   if (editOrReplyToMessage === "replyMessage") {
-    ctx.reply(`صفحه ${pageNum + 1}`, {
+    ctx.reply(`اشعار حافظ`, {
       reply_markup: {
         inline_keyboard: [keyboard],
       },
@@ -112,7 +137,7 @@ function showPage(
   }
 
   if (editOrReplyToMessage === "editMessage") {
-    ctx.editMessageText(`صفحه ${pageNum + 1}`, {
+    ctx.editMessageText(`اشعار حافظ `, {
       reply_markup: {
         inline_keyboard: keyboard,
       },
@@ -122,33 +147,56 @@ function showPage(
 
 const getHafezPoemsPersian = async () => {
   // one button each
-  const mainText = "Please select a poet";
 
-  const poets = [
-    {
+  const poets: {
+    [x: string]: {
+      title: {
+        en: string;
+        fa: string;
+      };
+      id: string;
+    };
+  } = {
+    hafez: {
       title: {
         en: "Hafez",
         fa: "خواجه حافظ شیرازی",
       },
       id: "0",
     },
-    {
+    saadi: {
       title: {
         en: "Saadi",
         fa: "سعدی",
       },
       id: "1",
     },
-  ];
+  };
+
+  const getPoetNameById = (poetId: string) => {
+    switch (poetId) {
+      case "0":
+        return "Hafez";
+      case "1":
+        return "Saadi";
+    }
+  };
 
   PersianPoemsTelegramBot.bot?.callbackQuery(/select-poet:(\d+)/, (ctx) => {
-    createHafezMenu(ctx, "editMessage");
+    const poetId = ctx.match[1];
+    switch (getPoetNameById(poetId)) {
+      case "Hafez":
+        return createHafez(ctx, "editMessage");
+      case "Saadi":
+        ctx.reply("soon");
+      // return createSaadi(ctx, "editMessage");
+    }
   });
 
   PersianPoemsTelegramBot.bot?.callbackQuery(
     /select-poet-new-message:(\d+)/,
     (ctx) => {
-      createHafezMenu(ctx, "replyMessage");
+      createHafez(ctx, "replyMessage");
     }
   );
 
@@ -168,24 +216,27 @@ const getHafezPoemsPersian = async () => {
     editOrReply: "editMessage" | "replyMessage"
   ) => {
     const menu = new InlineKeyboard();
-    poets.forEach((poet) => {
-      menu.text(poet.title.fa, `select-poet:${poet.id}`).row();
-    });
+
+    const text =
+      "به ربات تلگرام شعر های حافظ خوش آمدید. در این ربات، شما می توانید شعر های زیبای حافظ را بخوانید. همچنین با استفاده از دستور /poem می توانید شعر روز را دریافت کنید. لذت ببرید.";
+
+    menu.text("اشعار حافظ", "hafez_poems").row();
+    menu.text("فال حافظ", "hafez_get_fal").row();
+    menu.text("درباره حافظ", "hafez_bio").row();
 
     if (editOrReply === "editMessage") {
-      return ctx.editMessageText("لطفا شاعر انتخاب کنید", {
+      return ctx.editMessageText(text, {
         reply_markup: menu,
       });
     }
     if (editOrReply === "replyMessage") {
-      console.log("asdsadasdad");
-      return ctx.reply("لطفا شاعر انتخاب کنید", {
+      return ctx.reply(text, {
         reply_markup: menu,
       });
     }
   };
 
-  const createHafezMenu = (
+  const createHafez = (
     ctx: Context,
     editOrReply: "editMessage" | "replyMessage" = "replyMessage"
   ) => {
@@ -202,17 +253,16 @@ const getHafezPoemsPersian = async () => {
       .row()
       .text("ساقی نامه", "hafez_saghiname")
       .row()
-      .text("بیوگرافی", "hafez_hafez_bio")
-      .row()
-      .text("بازگشت به منوی شاعران", "go-back-to-poet-list");
+
+      .text("بازگشت", "go-back-to-poet-list");
 
     if (editOrReply === "editMessage") {
-      return ctx.editMessageText("منوی حافظ شیرازی", {
+      return ctx.editMessageText("لطفا یک مورد را انتخاب نمایید", {
         reply_markup: newMenu,
       });
     }
     if (editOrReply === "replyMessage") {
-      return ctx.reply("لطفا انتخاب کنید", {
+      return ctx.reply("لطفا یک مورد انتخاب کنید", {
         reply_markup: newMenu,
       });
     }
@@ -220,6 +270,14 @@ const getHafezPoemsPersian = async () => {
 
   PersianPoemsTelegramBot.addCommandEventListener("start", (ctx) =>
     createPoetMenu(ctx, "replyMessage")
+  );
+
+  PersianPoemsTelegramBot.addCommandEventListener("poem", (ctx) =>
+    selectAndRenderRandomGhazal(ctx)
+  );
+
+  PersianPoemsTelegramBot.addCommandEventListener("fal", (ctx) =>
+    selectAndRenderRandomGhazal(ctx)
   );
 
   PersianPoemsTelegramBot.bot?.callbackQuery(/hafez_page:(.+)/, async (ctx) => {
@@ -274,7 +332,31 @@ const getHafezPoemsPersian = async () => {
   PersianPoemsTelegramBot.bot?.callbackQuery(/hafez_bio/, async (ctx) => {
     const text =
       "خواجه شمس‌الدین محمد شیرازی متخلص به «حافظ»، غزلسرای بزرگ و از خداوندان شعر و ادب پارسی است. وی حدود سال ۷۲۶ هجری قمری در شیراز متولد شد. علوم و فنون را در محفل درس استادان زمان فراگرفت و در علوم ادبی عصر پایه‌ای رفیع یافت. خاصه در علوم فقهی و الهی تأمل بسیار کرد و قرآن را با چهارده روایت مختلف از بر داشت. گوته دانشمند بزرگ و شاعر و سخنور مشهور آلمانی دیوان شرقی خود را به نام او و با کسب الهام از افکار وی تدوین کرد. دیوان اشعار او شامل غزلیات، چند قصیده، چند مثنوی، قطعات و رباعیات است. وی به سال ۷۹۲ هجری قمری در شیراز درگذشت. آرامگاه او در حافظیهٔ شیراز زیارتگاه صاحبنظران و عاشقان شعر و ادب پارسی است.    ";
-    showPoem(ctx, text, "/hafez");
+    const keyboard = new InlineKeyboard();
+    keyboard
+      .url(
+        "سایت ویکیپدیا",
+        "https://fa.wikipedia.org/wiki/%D8%AD%D8%A7%D9%81%D8%B8"
+      )
+      .row()
+      .text("بازگشت", "back")
+      .row();
+
+    return ctx.reply(text, {
+      reply_markup: keyboard,
+    });
+  });
+
+  PersianPoemsTelegramBot.bot?.callbackQuery(/hafez_get_fal/, async (ctx) => {
+    selectAndRenderRandomGhazal(ctx);
+  });
+
+  PersianPoemsTelegramBot.bot?.callbackQuery(/hafez_poems/, async (ctx) => {
+    return createHafez(ctx, "editMessage");
+  });
+
+  PersianPoemsTelegramBot.bot?.callbackQuery(/back/, async (ctx) => {
+    return createPoetMenu(ctx, "editMessage");
   });
 
   PersianPoemsTelegramBot.start();
