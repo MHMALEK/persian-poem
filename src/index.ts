@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import hafezController from "./api/poems/routes/hafez";
 import TelegramBot from "./services/telegram-bot";
 import { Menu } from "@grammyjs/menu";
-import { getHafezPoemsAPI } from "./services/http/hafez";
+import { getHafezPoemsPersian } from "./services/http/hafez";
 
 dotenv.config();
 
@@ -20,7 +20,7 @@ const PersianPoemsTelegramBot = new TelegramBot(
   process.env.TELEGRAM_BOT_API_TOKEN as string
 );
 
-getHafezPoemsAPI();
+getHafezPoemsPersian();
 
 app.listen(port, () => {
   console.log(`⚡️[server]: Server is running at 
