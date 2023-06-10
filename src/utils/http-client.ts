@@ -10,7 +10,6 @@ class HttpClient {
   private create(baseURL: string) {
     return axios.create({
       baseURL,
-      timeout: 5000,
     });
   }
   getData = async (endpoint: string, params = {}, headers = {}) => {

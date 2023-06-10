@@ -1,5 +1,4 @@
-import { Bot, Context } from "grammy";
-import * as dotenv from "dotenv";
+import { Bot, Context, session, SessionFlavor } from "grammy";
 import TelegramBotMenu from "./menu/create-menu";
 import { Menu } from "@grammyjs/menu";
 
@@ -34,6 +33,10 @@ class TelegramBot extends TelegramBotMenu {
     this.bot?.command(event, callBack);
   }
 
+  useSession(sessionInitials?: { [x: string]: any }) {
+    this.bot?.use(session<any, any>(sessionInitials));
+  }
+
   addMenu({
     menu,
     commandName,
@@ -53,6 +56,10 @@ class TelegramBot extends TelegramBotMenu {
 
     this.bot?.command(commandName, onMenuCommandCallBack);
   }
+
+  setLanguage = (ctx: Context & SessionFlavor<any>, lang: "en" | "fa") => {
+    ctx.session.langauge = lang;
+  };
 
   private onBotStart() {
     this.addCommandEventListener("start", (ctx) =>
