@@ -7,9 +7,16 @@ import * as dotenv from "dotenv";
 
 dotenv.config();
 
-const PersianPoemsTelegramBot = new TelegramBot(
-  process.env.TELEGRAM_BOT_API_TOKEN as string
-);
+let token;
+if (process.env.NODE_ENV === "development") {
+  token = process.env.TELEGRAM_BOT_API_TOKEN_DEV;
+} else {
+  token = process.env.TELEGRAM_BOT_API_TOKEN_PROD;
+}
+
+console.log("asdsad", process.env.NODE_ENV);
+
+const PersianPoemsTelegramBot = new TelegramBot(token as string);
 
 const HafezHttpClient = new HttpClient("https://ganjoor.net/hafez/");
 
@@ -104,7 +111,7 @@ const extractPoemsText = async (type: any) => {
   });
   let poem = "";
   items.forEach((item: any) => {
-    poem += `${item.m1}\n \n`;
+    poem += `${item.m1}\n ${item.m2}\n \n`;
   });
 
   return poem;
@@ -422,7 +429,7 @@ const getHafezPoemsPersian = async () => {
     ctx: Context,
     editOrReply: "editMessage" | "replyMessage" = "replyMessage"
   ) => {
-    ctx.reply("Fetching the poems. Please wait");
+    ctx.reply("Fetching the poems list. Please wait few seconds...");
 
     try {
       listOfPoemsInEnglish = await HafezHttpClientEn.getData("", {
@@ -433,7 +440,7 @@ const getHafezPoemsPersian = async () => {
         return createErrorEn(ctx);
       }
 
-      showPageEn(listOfPoemsInEnglish, ctx, 0, "editMessage");
+      showPageEn(listOfPoemsInEnglish, ctx, 0, "replyMessage");
     } catch (e) {
       console.log(e);
       createErrorEn(ctx);
@@ -576,7 +583,7 @@ const getHafezPoemsPersian = async () => {
   });
 
   PersianPoemsTelegramBot.bot?.callbackQuery(/p_h_en:(.+)/, async (ctx) => {
-    ctx.reply("Fetch the poem. Please wait a moment.");
+    ctx.reply("Fetching the poem text. Please wait few seconds...");
     const itemLink = `${enSourceBaseURl}/poem/${ctx.match[1]}-by-Hafez-Shirazi`; // Extract link from callback data
     const poemText = await extractPoemsTextEn(ctx, itemLink);
     if (poemText) {

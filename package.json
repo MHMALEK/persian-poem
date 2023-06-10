@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon",
-    "build": "tsc"
+    "start": "cross-env NODE_ENV=development nodemon",
+    "build": "cross-env NODE_ENV=production tsc"
   },
   "keywords": [],
   "author": "",
@@ -21,7 +21,9 @@
     "@grammyjs/menu": "^1.2.1",
     "axios": "^1.4.0",
     "cheerio": "^1.0.0-rc.12",
+    "cross-env": "^7.0.3",
     "dotenv": "^16.1.4",
-    "grammy": "^1.16.1"
+    "grammy": "^1.16.1",
+    "node-fetch": "^3.3.1"
   }
 }
