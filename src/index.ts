@@ -1,11 +1,27 @@
 import HttpClient from "./utils/http-client";
 import * as cheerio from "cheerio";
-import { Context, InlineKeyboard } from "grammy";
+import { Context, GrammyError, HttpError, InlineKeyboard } from "grammy";
 import axios from "axios";
 import TelegramBot from "./services/telegram-bot";
 import * as dotenv from "dotenv";
+import { saveAnalytics } from "./services/db/analytics";
+import * as Sentry from "@sentry/node";
+import connectToDB from "./services/db";
 
 dotenv.config();
+
+const dbUrl = process.env.MANGO_DB_URL;
+
+connectToDB(dbUrl as string);
+
+const initSentryForErrorsTracking = () => {
+  if (process.env.NODE_ENV != "development") {
+    Sentry.init({
+      dsn: "https://977d17376c5d4b56bef76b07d2e8968d@o522176.ingest.sentry.io/4505341620125696",
+      tracesSampleRate: 1.0,
+    });
+  }
+};
 
 let token;
 if (process.env.NODE_ENV === "development") {
@@ -13,8 +29,6 @@ if (process.env.NODE_ENV === "development") {
 } else {
   token = process.env.TELEGRAM_BOT_API_TOKEN_PROD;
 }
-
-console.log("asdsad", process.env.NODE_ENV);
 
 const PersianPoemsTelegramBot = new TelegramBot(token as string);
 
@@ -58,6 +72,8 @@ const getPoems = async (
   type: "ghete" | "ghazal" | "robaee2" | "ghaside" | "masnavi"
 ) => {
   const htmlPage = await HafezHttpClient.getData(type);
+  console.log(HafezHttpClient, htmlPage, type);
+
   let $ = cheerio.load(htmlPage);
   // Select the list items and map over them
   let list: any = [];
@@ -69,6 +85,11 @@ const getPoems = async (
   });
 
   return list;
+};
+
+const saveAnalyticsEvent = (ctx: Context, event: string) => {
+  const userData = ctx.from;
+  saveAnalytics({ ...userData, event });
 };
 
 const selectAndRenderRandomGhazal = async (ctx: Context) => {
@@ -119,7 +140,6 @@ const extractPoemsText = async (type: any) => {
 
 const extractPoemsTextEn = async (ctx: Context, poemUrl: string) => {
   try {
-    console.log("asdasds", poemUrl);
     const poem = await HafezHttpClientEn.getData("", {
       poem_url: poemUrl,
     });
@@ -135,6 +155,9 @@ const extractPoemsTextEn = async (ctx: Context, poemUrl: string) => {
 };
 
 const createErrorEn = (ctx: Context) => {
+  if (Sentry) {
+    Sentry.captureException("error");
+  }
   const keyboard = new InlineKeyboard();
 
   keyboard.text("Back", `hafez_poems:en`);
@@ -315,6 +338,8 @@ const getHafezPoemsPersian = async () => {
 
   PersianPoemsTelegramBot.bot?.callbackQuery(/select-poet:(\d+)/, (ctx) => {
     const poetId = ctx.match[1];
+    saveAnalyticsEvent(ctx, `select-poet:${poetId}`);
+
     switch (getPoetNameById(poetId)) {
       case "Hafez":
         return createHafez(ctx, "editMessage");
@@ -327,17 +352,23 @@ const getHafezPoemsPersian = async () => {
   PersianPoemsTelegramBot.bot?.callbackQuery(
     /select-poet-new-message:(\d+)/,
     (ctx) => {
+      saveAnalyticsEvent(ctx, "select-poet-new-message");
+
       createHafez(ctx, "replyMessage");
     }
   );
 
   PersianPoemsTelegramBot.bot?.callbackQuery(/go-back-to-poet-list/, (ctx) => {
+    saveAnalyticsEvent(ctx, "go-back-to-poet-list");
+
     createPoetMenuFa(ctx, "editMessage");
   });
 
   PersianPoemsTelegramBot.bot?.callbackQuery(
     /poet-list-from-new-message/,
     (ctx) => {
+      saveAnalyticsEvent(ctx, "poet-list-from-new-message");
+
       createPoetMenuFa(ctx, "replyMessage");
     }
   );
@@ -442,25 +473,30 @@ const getHafezPoemsPersian = async () => {
 
       showPageEn(listOfPoemsInEnglish, ctx, 0, "replyMessage");
     } catch (e) {
-      console.log(e);
+      Sentry.captureException(e);
       createErrorEn(ctx);
     }
   };
 
-  PersianPoemsTelegramBot.addCommandEventListener("start", (ctx) =>
-    createLanguageMenu(ctx)
-  );
+  PersianPoemsTelegramBot.addCommandEventListener("start", (ctx) => {
+    saveAnalyticsEvent(ctx, "start");
+    createLanguageMenu(ctx);
+  });
 
-  PersianPoemsTelegramBot.addCommandEventListener("poem", (ctx) =>
-    selectAndRenderRandomGhazal(ctx)
-  );
+  PersianPoemsTelegramBot.addCommandEventListener("poem", (ctx) => {
+    saveAnalyticsEvent(ctx, "poem_command");
+    selectAndRenderRandomGhazal(ctx);
+  });
 
-  PersianPoemsTelegramBot.addCommandEventListener("fal", (ctx) =>
-    selectAndRenderRandomGhazal(ctx)
-  );
+  PersianPoemsTelegramBot.addCommandEventListener("fal", (ctx) => {
+    saveAnalyticsEvent(ctx, "fal");
+    selectAndRenderRandomGhazal(ctx);
+  });
 
   PersianPoemsTelegramBot.bot?.callbackQuery(/hafez_page:(.+)/, async (ctx) => {
     const pageNum = parseInt(ctx.match[1]);
+    saveAnalyticsEvent(ctx, `hafez_page:${pageNum}`);
+
     const type = ctx.callbackQuery.data.split(":")[2];
     // @ts-ignore
     const list = await getPoems(type);
@@ -473,6 +509,7 @@ const getHafezPoemsPersian = async () => {
     /hafez_page_en:(.+)/,
     async (ctx) => {
       const pageNum = parseInt(ctx.match[1]);
+      saveAnalyticsEvent(ctx, `hafez_page_en:${pageNum}`);
       // @ts-ignore
       const list = listOfPoemsInEnglish;
       // @ts-ignore
@@ -485,6 +522,8 @@ const getHafezPoemsPersian = async () => {
     async (ctx) => {
       const itemLink = ctx.match[1]; // Extract link from callback data
       const type = ctx.match[1].split("/hafez/")[1];
+      saveAnalyticsEvent(ctx, `hafez_poems_select_fa:${type}`);
+
       const poemText = await extractPoemsText(type);
       showPoem(ctx, poemText, itemLink);
     }
@@ -492,35 +531,49 @@ const getHafezPoemsPersian = async () => {
 
   PersianPoemsTelegramBot.bot?.callbackQuery(/hafez_ghazal/, async (ctx) => {
     const list = await getPoems("ghazal");
+    saveAnalyticsEvent(ctx, "ghazal");
+
     showPage(list, ctx, 0, "editMessage", "ghazal");
   });
 
   PersianPoemsTelegramBot.bot?.callbackQuery(/hafez_ghete/, async (ctx) => {
     const list = await getPoems("ghete");
+    saveAnalyticsEvent(ctx, "ghete");
+
     showPage(list, ctx, 0, "editMessage", "ghete");
   });
 
   PersianPoemsTelegramBot.bot?.callbackQuery(/hafez_robaee2/, async (ctx) => {
     const list = await getPoems("robaee2");
+    saveAnalyticsEvent(ctx, "hafez_robaee2");
+
     showPage(list, ctx, 0, "editMessage", "robaee2");
   });
 
   PersianPoemsTelegramBot.bot?.callbackQuery(/hafez_ghaside/, async (ctx) => {
     const list = await getPoems("ghaside");
+    saveAnalyticsEvent(ctx, "hafez_ghaside");
+
     showPage(list, ctx, 0, "editMessage", "ghaside");
   });
 
   PersianPoemsTelegramBot.bot?.callbackQuery(/hafez_masnavi/, async (ctx) => {
+    saveAnalyticsEvent(ctx, "hafez_masnavi");
+
     const poem = await extractPoemsText("masnavi");
     showPoem(ctx, poem, "hafez/masnavi");
   });
 
   PersianPoemsTelegramBot.bot?.callbackQuery(/hafez_saghiname/, async (ctx) => {
     const poem = await extractPoemsText("saghiname");
+    saveAnalyticsEvent(ctx, "saghiname");
+
     showPoem(ctx, poem, "hafez/saghiname");
   });
 
   PersianPoemsTelegramBot.bot?.callbackQuery(/hafez_bio:fa/, async (ctx) => {
+    saveAnalyticsEvent(ctx, "hafez_bio");
+
     const text =
       "خواجه شمس‌الدین محمد شیرازی متخلص به «حافظ»، غزلسرای بزرگ و از خداوندان شعر و ادب پارسی است. وی حدود سال ۷۲۶ هجری قمری در شیراز متولد شد. علوم و فنون را در محفل درس استادان زمان فراگرفت و در علوم ادبی عصر پایه‌ای رفیع یافت. خاصه در علوم فقهی و الهی تأمل بسیار کرد و قرآن را با چهارده روایت مختلف از بر داشت. گوته دانشمند بزرگ و شاعر و سخنور مشهور آلمانی دیوان شرقی خود را به نام او و با کسب الهام از افکار وی تدوین کرد. دیوان اشعار او شامل غزلیات، چند قصیده، چند مثنوی، قطعات و رباعیات است. وی به سال ۷۹۲ هجری قمری در شیراز درگذشت. آرامگاه او در حافظیهٔ شیراز زیارتگاه صاحبنظران و عاشقان شعر و ادب پارسی است.    ";
     const keyboard = new InlineKeyboard();
@@ -571,10 +624,14 @@ const getHafezPoemsPersian = async () => {
   );
 
   PersianPoemsTelegramBot.bot?.callbackQuery(/hafez_get_fal/, async (ctx) => {
+    saveAnalyticsEvent(ctx, "hafez_get_fal");
+
     selectAndRenderRandomGhazal(ctx);
   });
 
   PersianPoemsTelegramBot.bot?.callbackQuery(/hafez_poems:fa/, async (ctx) => {
+    saveAnalyticsEvent(ctx, "hafez_poems:fa");
+
     return createHafez(ctx, "editMessage");
   });
 
@@ -592,6 +649,8 @@ const getHafezPoemsPersian = async () => {
   });
 
   PersianPoemsTelegramBot.bot?.callbackQuery(/back:fa/, async (ctx) => {
+    saveAnalyticsEvent(ctx, "back:fa");
+
     return createPoetMenuFa(ctx, "editMessage");
   });
 
@@ -602,6 +661,8 @@ const getHafezPoemsPersian = async () => {
   PersianPoemsTelegramBot.bot?.callbackQuery(
     /hafez_main_menu_back_fa/,
     async (ctx) => {
+      saveAnalyticsEvent(ctx, "hafez_main_menu_back_fa");
+
       // console.log(ctx);
       return createLanguageMenu(ctx);
     }
