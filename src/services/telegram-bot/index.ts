@@ -2,19 +2,32 @@ import { Bot, Context, session, SessionFlavor } from "grammy";
 import TelegramBotMenu from "./menu/create-menu";
 import { Menu } from "@grammyjs/menu";
 
+import * as dotenv from "dotenv";
+dotenv.config();
+
 class TelegramBot extends TelegramBotMenu {
   bot: Bot | undefined = undefined;
-  constructor(private botToken: string) {
+  token: string | undefined;
+
+  constructor(private botToken?: string) {
     super();
+    if (botToken) {
+      this.token = this.botToken;
+    }
+    if (process.env.NODE_ENV === "development") {
+      this.token = process.env.TELEGRAM_BOT_API_TOKEN_DEV;
+    } else {
+      this.token = process.env.TELEGRAM_BOT_API_TOKEN_PROD;
+    }
     this.create();
   }
+
   create() {
-    this.bot = new Bot(this.botToken);
+    this.bot = new Bot(this.token as string);
   }
 
   start() {
     this.bot?.start();
-    this.onBotStart();
   }
 
   stop() {
@@ -68,4 +81,7 @@ class TelegramBot extends TelegramBotMenu {
   }
 }
 
-export default TelegramBot;
+const PersianPoemsTelegramBot = new TelegramBot();
+
+export { TelegramBot };
+export default PersianPoemsTelegramBot;

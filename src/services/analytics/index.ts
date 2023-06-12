@@ -1,3 +1,4 @@
+import { Context } from "grammy";
 import mongoose from "mongoose";
 import AnalyticsSchema from "./schema";
 
@@ -12,4 +13,9 @@ const saveAnalytics = (userData: any) => {
   analytics.save().then((item) => console.log(item));
 };
 
-export { saveAnalytics };
+const saveAnalyticsEvent = (ctx: Context, event: string) => {
+  const userData = ctx.from;
+  // saveAnalytics({ ...userData, event });
+};
+
+export { saveAnalytics, saveAnalyticsEvent };
