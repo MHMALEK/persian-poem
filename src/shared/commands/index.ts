@@ -1,6 +1,7 @@
 import { Context, InlineKeyboard } from "grammy";
 import { createHafezMenuEn } from "../../poets/hafez/en";
 import { createHafezMenuFa } from "../../poets/hafez/fa";
+import { createKhayamMenuEn } from "../../poets/khayyam/en";
 import { createKhayamMenuFa } from "../../poets/khayyam/fa";
 import PersianPoemsTelegramBot from "../../services/telegram-bot";
 
@@ -24,14 +25,18 @@ const createLanguageMenu = (ctx: Context) => {
   let keyboard = new InlineKeyboard();
 
   const textEn =
-    "Welcome to the Hafez Poetry Bot! I'm here to share with you the beautiful verses of the great Persian poet, Hafez.  Enjoy the world of rhythm, rhyme, and profound meaning that is Hafez's poetry.";
+    "Welcome to the Persian Poetry Bot! I'm here to share with you the beautiful verses of the great Persian poetry.  Enjoy the world of rhythm, rhyme, and profound meaning that is Persian's poetry.";
 
   const textFa =
-    "به ربات تلگرام شعر های حافظ خوش آمدید. در این ربات، شما می توانید شعر های زیبای حافظ را بخوانید. لذت ببرید.";
+    "به ربات تلگرام شعر فارسی خوش آمدید. در این ربات، شما می توانید شعرهای زیبای فارسی را به دو زبان انگلیسی و فارسی بخوانید و لذت ببرید.";
 
   const finalText = `
-    ${textFa}
-    ${textEn}
+    
+${textFa}
+
+${textEn}
+
+<b>What language do you want to read the poems?</b>
     `;
 
   keyboard.text("English", "select_language:en");
@@ -39,6 +44,7 @@ const createLanguageMenu = (ctx: Context) => {
 
   ctx.reply(finalText, {
     reply_markup: keyboard,
+    parse_mode: "HTML",
   });
 };
 
@@ -54,24 +60,24 @@ const poets: {
   hafez: {
     title: {
       en: "Hafez",
-      fa: "خواجه حافظ شیرازی",
+      fa: "حافظ شیرازی",
     },
     id: "hafez",
   },
   khayyam: {
     title: {
-      en: "Khayyam",
+      en: "khayyam",
       fa: "خیام",
-    },
-    id: "saadi",
-  },
-  saadi: {
-    title: {
-      en: "Saadi",
-      fa: "سعدی",
     },
     id: "khayyam",
   },
+  // saadi: {
+  //   title: {
+  //     en: "Saadi",
+  //     fa: "سعدی",
+  //   },
+  //   id: "khayyam",
+  // },
 };
 
 const createPoetListFa = async (ctx: Context) => {
@@ -79,6 +85,8 @@ const createPoetListFa = async (ctx: Context) => {
   Object.values(poets).forEach((poet) => {
     keyboard.text(poet.title.fa, `select_poet_fa:${poet.id}`).row();
   });
+  keyboard.text("بازگشت", "go_back_to_language_menu:fa").row();
+
   ctx.editMessageText("لطفا شاعر مورد نظر خود را انتخاب نمایید.", {
     reply_markup: keyboard,
   });
@@ -86,8 +94,10 @@ const createPoetListFa = async (ctx: Context) => {
 
 const createPoetListEn = async (ctx: Context) => {
   const keyboard = new InlineKeyboard();
-  console.log();
-  keyboard.text(poets.hafez.title.en, `select_poet_en:${poets.hafez.id}`).row();
+  Object.values(poets).forEach((poet) => {
+    keyboard.text(poet.title.en, `select_poet_en:${poet.id}`).row();
+  });
+  keyboard.text("Back", "go_back_to_language_menu:en").row();
   ctx.editMessageText("Plase select a poet", {
     reply_markup: keyboard,
   });
@@ -117,8 +127,36 @@ const addSelectPoetCallbacks = () => {
     /select_poet_en:(.+)/,
     async (ctx) => {
       const poetId = ctx.match[1];
+      switch (poetId) {
+        case "hafez":
+          return createHafezMenuEn(ctx, "editMessage");
 
-      return createHafezMenuEn(ctx, "editMessage");
+        case "khayyam":
+          return createKhayamMenuEn(ctx, "editMessage");
+        default:
+          return createKhayamMenuEn(ctx, "editMessage");
+      }
+    }
+  );
+
+  PersianPoemsTelegramBot.bot?.callbackQuery(
+    /go_back_to_language_menu:(.+)/,
+    async (ctx) => {
+      createLanguageMenu(ctx);
+    }
+  );
+
+  PersianPoemsTelegramBot.bot?.callbackQuery(
+    /back_to_poet_menu_en/,
+    async (ctx) => {
+      createPoetListEn(ctx);
+    }
+  );
+
+  PersianPoemsTelegramBot.bot?.callbackQuery(
+    /back_to_poet_menu_fa/,
+    async (ctx) => {
+      createPoetListFa(ctx);
     }
   );
 };

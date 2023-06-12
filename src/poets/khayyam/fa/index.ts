@@ -5,7 +5,6 @@ import {
   extractPoemsText,
   fetchHtmlPageFromGanjoor,
   getPoems,
-  loadHtml,
 } from "../../../services/ganjoor-crawler";
 import PersianPoemsTelegramBot from "../../../services/telegram-bot";
 import { createLanguageMenu } from "../../../shared/commands";
@@ -115,11 +114,11 @@ const createKhayamMenuFa = (
   const menu = new InlineKeyboard();
 
   const text =
-    "به ربات تلگرام شعر های حافظ خوش آمدید. در این ربات، شما می توانید شعر های زیبای خیام را بخوانید.";
+    "به ربات تلگرام شعرهای فارسی خوش آمدید. در این ربات، شما می توانید شعر های زیبای خیام را بخوانید.";
 
   menu.text("اشعار خیام", "khayam_poems:fa").row();
   menu.text("درباره خیام", "khayam_bio:fa").row();
-  menu.text("بازگشت", "khayam_main_menu_back_fa").row();
+  menu.text("بازگشت", "back_to_poet_menu_fa").row();
 
   if (editOrReply === "editMessage") {
     return ctx.editMessageText(text, {

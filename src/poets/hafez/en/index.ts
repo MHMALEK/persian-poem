@@ -81,11 +81,11 @@ const createHafezMenuEn = (
   const menu = new InlineKeyboard();
 
   const text =
-    "Welcome to the Hafez Poetry Bot! I'm here to share with you the beautiful verses of the great Persian poet, Hafez.  Enjoy the world of rhythm, rhyme, and profound meaning that is Hafez's poetry.";
+    "Welcome to the Persian Poetry Bot! I'm here to share with you the beautiful verses of the great Persian poetry.  Enjoy the world of rhythm, rhyme, and profound meaning that is Persian's poetry.";
 
   menu.text("Poems", "hafez_poems:en").row();
   menu.text("About Hafez Shirazi", "hafez_bio:en").row();
-  menu.text("back", "back:en").row();
+  menu.text("back", "back_to_poet_menu_en").row();
 
   if (editOrReply === "editMessage") {
     return ctx.editMessageText(text, {

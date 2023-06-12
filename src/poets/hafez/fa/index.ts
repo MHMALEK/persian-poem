@@ -120,7 +120,7 @@ const createHafezMenuFa = (
   menu.text("اشعار حافظ", "hafez_poems:fa").row();
   menu.text("فال حافظ", "hafez_get_fal").row();
   menu.text("درباره حافظ", "hafez_bio:fa").row();
-  menu.text("بازگشت", "hafez_main_menu_back_fa").row();
+  menu.text("بازگشت", "back_to_poet_menu_fa").row();
 
   if (editOrReply === "editMessage") {
     return ctx.editMessageText(text, {
