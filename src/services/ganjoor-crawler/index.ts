@@ -1,14 +1,16 @@
 import * as cheerio from "cheerio";
-import { config } from "../../poets/hafez/fa";
 import HttpClient from "../../utils/http-client";
-const GanjoorHttpClient = new HttpClient("https://ganjoor.net");
+const ganjoorBaseUrl = "https://ganjoor.net";
+
+const GanjoorHttpClient = new HttpClient(ganjoorBaseUrl);
 
 const loadHtml = async (url: string) => {
   return await GanjoorHttpClient.getData(url);
 };
 
-const fetchHtmlPageFromGanjoor = async (type: string) => {
-  const itemLinkToFetch = `${config.sourceBaseUrl}/${type}`;
+const fetchHtmlPageFromGanjoor = async (author: string, type: string) => {
+  const itemLinkToFetch = `${ganjoorBaseUrl}/${author}/${type}`;
+  console.log("itemLinkToFetch", itemLinkToFetch, author, type);
   const htmlPage = await loadHtml(itemLinkToFetch);
   return htmlPage;
 };

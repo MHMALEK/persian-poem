@@ -1,6 +1,5 @@
 import * as cheerio from "cheerio";
 import { Context, InlineKeyboard } from "grammy";
-import { createLanguageMenu } from "../../..";
 import { saveAnalyticsEvent } from "../../../services/analytics";
 import {
   extractPoemsText,
@@ -9,12 +8,13 @@ import {
   loadHtml,
 } from "../../../services/ganjoor-crawler";
 import PersianPoemsTelegramBot from "../../../services/telegram-bot";
+import { createLanguageMenu } from "../../../shared/commands";
 const config = {
   pagination: {
     itemPerPage: 10,
   },
   wikiPediaUrl: "https://fa.wikipedia.org/wiki/%D8%AD%D8%A7%D9%81%D8%B8",
-  sourceBaseUrl: "https://ganjoor.net/hafez",
+  sourceBaseUrl: "https://ganjoor.net/",
 };
 
 const showHafezBio = (ctx: Context) => {
@@ -108,7 +108,7 @@ const showPage = (
   }
 };
 
-const createPoetMenuFa = (
+const createHafezMenuFa = (
   ctx: Context,
   editOrReply: "editMessage" | "replyMessage"
 ) => {
@@ -167,12 +167,13 @@ const createHafez = (
 };
 
 const selectAndRenderRandomGhazal = async (ctx: Context) => {
-  const htmlPage = await fetchHtmlPageFromGanjoor("ghazal");
+  const htmlPage = await fetchHtmlPageFromGanjoor("hafez", "ghazal");
   const list = await getPoems(htmlPage);
   const randomGhazalIndex = Math.floor(Math.random() * list.length);
   const randomGhazal = list[randomGhazalIndex];
 
   const randomGhazalHtml = await fetchHtmlPageFromGanjoor(
+    "hafez",
     randomGhazal.link.split("/hafez/")[1]
   );
 
@@ -196,7 +197,7 @@ const addHafezFaCallbacks = () => {
     saveAnalyticsEvent(ctx, `hafez_page:${pageNum}`);
 
     const type = ctx.callbackQuery.data.split(":")[2];
-    const htmlPage = await fetchHtmlPageFromGanjoor("ghazal");
+    const htmlPage = await fetchHtmlPageFromGanjoor("hafez", "ghazal");
     const list = await getPoems(htmlPage);
 
     showPage(list, ctx, pageNum, "editMessage", type);
@@ -209,7 +210,7 @@ const addHafezFaCallbacks = () => {
       const type = ctx.match[1].split("/hafez/")[1];
       saveAnalyticsEvent(ctx, `hafez_poems_select_fa:${type}`);
 
-      const htmlPage = await fetchHtmlPageFromGanjoor(type);
+      const htmlPage = await fetchHtmlPageFromGanjoor("hafez", type);
 
       const poemText = await extractPoemsText(htmlPage);
       showPoem(ctx, poemText, itemLink);
@@ -217,14 +218,14 @@ const addHafezFaCallbacks = () => {
   );
 
   PersianPoemsTelegramBot.bot?.callbackQuery(/hafez_ghazal/, async (ctx) => {
-    const htmlPage = await fetchHtmlPageFromGanjoor("ghazal");
+    const htmlPage = await fetchHtmlPageFromGanjoor("hafez", "ghazal");
     const list = await getPoems(htmlPage);
     saveAnalyticsEvent(ctx, "ghazal");
     showPage(list, ctx, 0, "editMessage", "ghazal");
   });
 
   PersianPoemsTelegramBot.bot?.callbackQuery(/hafez_ghete/, async (ctx) => {
-    const htmlPage = await fetchHtmlPageFromGanjoor("ghete");
+    const htmlPage = await fetchHtmlPageFromGanjoor("hafez", "ghete");
     const list = await getPoems(htmlPage);
     saveAnalyticsEvent(ctx, "ghete");
 
@@ -232,7 +233,7 @@ const addHafezFaCallbacks = () => {
   });
 
   PersianPoemsTelegramBot.bot?.callbackQuery(/hafez_robaee2/, async (ctx) => {
-    const htmlPage = await fetchHtmlPageFromGanjoor("robaee2");
+    const htmlPage = await fetchHtmlPageFromGanjoor("hafez", "robaee2");
     const list = await getPoems(htmlPage);
     saveAnalyticsEvent(ctx, "hafez_robaee2");
 
@@ -240,7 +241,7 @@ const addHafezFaCallbacks = () => {
   });
 
   PersianPoemsTelegramBot.bot?.callbackQuery(/hafez_ghaside/, async (ctx) => {
-    const htmlPage = await fetchHtmlPageFromGanjoor("ghaside");
+    const htmlPage = await fetchHtmlPageFromGanjoor("hafez", "ghaside");
     const list = await getPoems(htmlPage);
     saveAnalyticsEvent(ctx, "hafez_ghaside");
 
@@ -249,13 +250,13 @@ const addHafezFaCallbacks = () => {
 
   PersianPoemsTelegramBot.bot?.callbackQuery(/hafez_masnavi/, async (ctx) => {
     saveAnalyticsEvent(ctx, "hafez_masnavi");
-    const htmlPage = await fetchHtmlPageFromGanjoor("masnavi");
+    const htmlPage = await fetchHtmlPageFromGanjoor("hafez", "masnavi");
     const poem = await extractPoemsText(htmlPage);
     showPoem(ctx, poem, "hafez/masnavi");
   });
 
   PersianPoemsTelegramBot.bot?.callbackQuery(/hafez_saghiname/, async (ctx) => {
-    const htmlPage = await fetchHtmlPageFromGanjoor("saghiname");
+    const htmlPage = await fetchHtmlPageFromGanjoor("hafez", "saghiname");
     const poem = await extractPoemsText(htmlPage);
     saveAnalyticsEvent(ctx, "saghiname");
 
@@ -282,7 +283,7 @@ const addHafezFaCallbacks = () => {
   PersianPoemsTelegramBot.bot?.callbackQuery(/back:fa/, async (ctx) => {
     saveAnalyticsEvent(ctx, "back:fa");
 
-    return createPoetMenuFa(ctx, "editMessage");
+    return createHafezMenuFa(ctx, "editMessage");
   });
 
   PersianPoemsTelegramBot.bot?.callbackQuery(
@@ -301,7 +302,7 @@ const addHafezFaCallbacks = () => {
       saveAnalyticsEvent(ctx, "go-back-to-hafez-list");
 
       console.log(ctx);
-      return createPoetMenuFa(ctx, "editMessage");
+      return createHafezMenuFa(ctx, "editMessage");
     }
   );
 };
@@ -309,7 +310,7 @@ const addHafezFaCallbacks = () => {
 export {
   showPoem,
   showPage,
-  createPoetMenuFa,
+  createHafezMenuFa,
   createHafez,
   selectAndRenderRandomGhazal,
   addHafezFaCallbacks,

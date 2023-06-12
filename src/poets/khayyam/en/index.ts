@@ -74,7 +74,7 @@ function showPageEn(
   }
 }
 
-const createHafezMenuEn = (
+const createPoetMenuEn = (
   ctx: Context,
   editOrReply: "editMessage" | "replyMessage"
 ) => {
@@ -165,7 +165,7 @@ const addHafezEnCallbacks = () => {
 export {
   showPoemEn,
   showPageEn,
-  createHafezMenuEn,
+  createPoetMenuEn,
   createHafezEn,
   addHafezEnCallbacks,
 };
