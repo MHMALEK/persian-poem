@@ -8,6 +8,7 @@ import {
 } from "../../../services/ganjoor-crawler";
 import PersianPoemsTelegramBot from "../../../services/telegram-bot";
 import { createLanguageMenu } from "../../../shared/commands";
+import { splitMessage } from "../../../utils/splitter";
 const config = {
   pagination: {
     itemPerPage: 10,
@@ -38,10 +39,15 @@ const showPoem = async (ctx: Context, text: string, link: string) => {
 
   keyboard.text("بازگشت", "moulavi_poems:fa");
 
-  ctx.reply(text, {
-    reply_markup: keyboard,
-    parse_mode: "HTML",
-  });
+  let maxChunkLines = 150; // Maximum lines in a chunk
+  const chunks = splitMessage(text, maxChunkLines);
+
+  for (let i = 0; i < chunks.length; i++) {
+    await ctx.reply(chunks[i], {
+      reply_markup: keyboard,
+      parse_mode: "HTML",
+    });
+  }
 };
 
 const showPage = (
@@ -186,6 +192,39 @@ const createMoulaviShamsMenu = (
   }
 };
 
+const createMoulaviMasnaviMenu = (
+  ctx: Context,
+  editOrReply: "editMessage" | "replyMessage" = "replyMessage"
+) => {
+  const newMenu = new InlineKeyboard()
+
+    .text("دفتر اول", "moulavi_masnavi:daftar1")
+    .row()
+    .text("دفتر دوم", "moulavi_masnavi:daftar2")
+    .row()
+    .text("دفتر سوم", "moulavi_masnavi:daftar3")
+    .row()
+    .text("دفتر چهارم", "moulavi_masnavi:daftar4")
+    .row()
+    .text("دفتر پنجم", "moulavi_masnavi:daftar5")
+    .row()
+    .text("دفتر ششم", "moulavi_masnavi:daftar6")
+    .row()
+
+    .text("بازگشت", "go-back-to-moulavi-list");
+
+  if (editOrReply === "editMessage") {
+    return ctx.editMessageText("لطفا یک مورد را انتخاب نمایید", {
+      reply_markup: newMenu,
+    });
+  }
+  if (editOrReply === "replyMessage") {
+    return ctx.reply("لطفا یک مورد انتخاب کنید", {
+      reply_markup: newMenu,
+    });
+  }
+};
+
 const addmoulaviFaCallbacks = () => {
   // callbacks
   PersianPoemsTelegramBot.bot?.callbackQuery(
@@ -216,9 +255,19 @@ const addmoulaviFaCallbacks = () => {
     }
   );
 
-  PersianPoemsTelegramBot.bot?.callbackQuery(/moulavi_shams_menu/, async (ctx) => {
-    return createMoulaviShamsMenu(ctx);
-  });
+  PersianPoemsTelegramBot.bot?.callbackQuery(
+    /moulavi_shams_menu/,
+    async (ctx) => {
+      return createMoulaviShamsMenu(ctx);
+    }
+  );
+
+  PersianPoemsTelegramBot.bot?.callbackQuery(
+    /moulavi_masnavi_menu/,
+    async (ctx) => {
+      return createMoulaviMasnaviMenu(ctx);
+    }
+  );
 
   // shams page
 
@@ -273,6 +322,90 @@ const addmoulaviFaCallbacks = () => {
       saveAnalyticsEvent(ctx, "moulavi_shams:robaeesh");
 
       showPage(list, ctx, 0, "editMessage", "shams/robaeesh");
+    }
+  );
+  // end of shams page
+
+  // shams page
+
+  PersianPoemsTelegramBot.bot?.callbackQuery(
+    /moulavi_masnavi:daftar1/,
+    async (ctx) => {
+      const htmlPage = await fetchHtmlPageFromGanjoor(
+        "moulavi",
+        "masnavi/daftar1"
+      );
+      const list = await getPoems(htmlPage);
+      saveAnalyticsEvent(ctx, "moulavi_shams:masnavi/daftar1");
+
+      showPage(list, ctx, 0, "editMessage", "masnavi/daftar1");
+    }
+  );
+  PersianPoemsTelegramBot.bot?.callbackQuery(
+    /moulavi_masnavi:daftar2/,
+    async (ctx) => {
+      const htmlPage = await fetchHtmlPageFromGanjoor(
+        "moulavi",
+        "masnavi/daftar2"
+      );
+      const list = await getPoems(htmlPage);
+      saveAnalyticsEvent(ctx, "masnavi/daftar2");
+
+      showPage(list, ctx, 0, "editMessage", "masnavi/daftar2");
+    }
+  );
+  PersianPoemsTelegramBot.bot?.callbackQuery(
+    /moulavi_masnavi:daftar3/,
+    async (ctx) => {
+      const htmlPage = await fetchHtmlPageFromGanjoor(
+        "moulavi",
+        "masnavi/daftar3"
+      );
+      const list = await getPoems(htmlPage);
+      saveAnalyticsEvent(ctx, "masnavi/daftar3");
+
+      showPage(list, ctx, 0, "editMessage", "masnavi/daftar3");
+    }
+  );
+  PersianPoemsTelegramBot.bot?.callbackQuery(
+    /moulavi_masnavi:daftar4/,
+    async (ctx) => {
+      const htmlPage = await fetchHtmlPageFromGanjoor(
+        "moulavi",
+        "masnavi/daftar4"
+      );
+      const list = await getPoems(htmlPage);
+      saveAnalyticsEvent(ctx, "masnavi/daftar4");
+
+      showPage(list, ctx, 0, "editMessage", "masnavi/daftar4");
+    }
+  );
+
+  PersianPoemsTelegramBot.bot?.callbackQuery(
+    /moulavi_masnavi:daftar5/,
+    async (ctx) => {
+      const htmlPage = await fetchHtmlPageFromGanjoor(
+        "moulavi",
+        "masnavi/daftar5"
+      );
+      const list = await getPoems(htmlPage);
+      saveAnalyticsEvent(ctx, "masnavi/daftar5");
+
+      showPage(list, ctx, 0, "editMessage", "masnavi/daftar5");
+    }
+  );
+
+  PersianPoemsTelegramBot.bot?.callbackQuery(
+    /moulavi_masnavi:daftar6/,
+    async (ctx) => {
+      const htmlPage = await fetchHtmlPageFromGanjoor(
+        "moulavi",
+        "masnavi/daftar6"
+      );
+      const list = await getPoems(htmlPage);
+      saveAnalyticsEvent(ctx, "masnavi/daftar6");
+
+      showPage(list, ctx, 0, "editMessage", "masnavi/daftar6");
     }
   );
   // end of shams page
