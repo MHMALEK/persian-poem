@@ -3,6 +3,8 @@ import { createHafezMenuEn } from "../../poets/hafez/en";
 import { createHafezMenuFa } from "../../poets/hafez/fa";
 import { createKhayamMenuEn } from "../../poets/khayyam/en";
 import { createKhayamMenuFa } from "../../poets/khayyam/fa";
+import { createMoulaviEn, createMoulaviMenuEn } from "../../poets/molana/en";
+import { createMoulaviMenuFa } from "../../poets/molana/fa";
 import PersianPoemsTelegramBot from "../../services/telegram-bot";
 
 const addSelectLanguagesCallback = () => {
@@ -71,6 +73,13 @@ const poets: {
     },
     id: "khayyam",
   },
+  moulavi: {
+    title: {
+      en: "moulavi",
+      fa: "مولانا",
+    },
+    id: "moulavi",
+  },
   // saadi: {
   //   title: {
   //     en: "Saadi",
@@ -117,6 +126,8 @@ const addSelectPoetCallbacks = () => {
           return createKhayamMenuFa(ctx, "editMessage");
         case "khayyam":
           return createKhayamMenuFa(ctx, "editMessage");
+        case "moulavi":
+          return createMoulaviMenuFa(ctx, "editMessage");
         default:
           return createKhayamMenuFa(ctx, "editMessage");
       }
@@ -130,9 +141,11 @@ const addSelectPoetCallbacks = () => {
       switch (poetId) {
         case "hafez":
           return createHafezMenuEn(ctx, "editMessage");
-
         case "khayyam":
           return createKhayamMenuEn(ctx, "editMessage");
+        case "moulavi":
+          // return createMoulaviMenuEn(ctx, "editMessage");
+          return ctx.reply("We're working on it... Soon...");
         default:
           return createKhayamMenuEn(ctx, "editMessage");
       }

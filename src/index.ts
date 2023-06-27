@@ -10,6 +10,7 @@ import {
 } from "./shared/commands";
 import { addkhayamFaCallbacks } from "./poets/khayyam/fa";
 import { addKhayamEnCallbacks } from "./poets/khayyam/en";
+import { addmoulaviFaCallbacks } from "./poets/molana/fa";
 
 const dbUrl = process.env.MANGO_DB_URL;
 connectToDB(dbUrl as string);
@@ -24,5 +25,6 @@ addHafezFaCallbacks();
 addHafezEnCallbacks();
 addkhayamFaCallbacks();
 addKhayamEnCallbacks();
+addmoulaviFaCallbacks();
 
 PersianPoemsTelegramBot.start();
